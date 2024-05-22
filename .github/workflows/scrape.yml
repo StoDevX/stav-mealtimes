@@ -34,19 +34,12 @@ jobs:
         echo 'let document = {getElementById: (id) => id};';
 
         cat data.html
-        | ./htmlq -- '[data-name="column_content"]'
-        | ./htmlq --remove-nodes 'div div' --text
+        | htmlq -- '[data-name="column_content"]'
+        | htmlq --remove-nodes 'div div' --text
         | tail -n +50;
 
-        echo '
-          console.log(
-            JSON.stringify(
-              Object.keys(globalThis)
-                .filter(key => key.startsWith("myChart"))
-                .map(key => globalThis[key])
-            )
-          );
-        ';
+        echo 'let datasets = Object.entries(globalThis).filter(([key]) => key.startsWith("myChart")).map(([k, v]) => v);';
+        echo 'console.log(JSON.stringify(datasets));';
 
         ) | node | jq > data.json
     - name: Clean up after parsing
