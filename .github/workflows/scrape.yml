@@ -2,9 +2,11 @@ name: Scrape latest data
 
 on:
   push:
+    branches:
+      - main
   workflow_dispatch:
   schedule:
-  - cron: '6,26,46 * * * *'
+  - cron: '6 2 * * *'
 
 jobs:
   scheduled:
@@ -12,6 +14,8 @@ jobs:
     steps:
     - name: Check out this repo
       uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref }}
     - name: Fetch latest data
       run: |-
         curl --fail 'https://www.stolaf.edu/apps/mealtimes/index.cfm' > data.html
