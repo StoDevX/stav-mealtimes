@@ -96,7 +96,7 @@ jobs:
               // give this date the full date
               parsedLabel = parsedLabel.year(parsedDate.year()).month(parsedDate.month()).date(parsedDate.date());
 
-              let wentBackwards = lastHour < parsedLabel.hour();
+              let wentBackwards = lastHour > parsedLabel.hour();
               if (wentBackwards) {
                 parsedLabel = parsedLabel.subtract(12, 'hour');
               }
