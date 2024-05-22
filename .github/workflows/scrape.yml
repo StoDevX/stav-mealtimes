@@ -30,13 +30,13 @@ jobs:
       run: >
         (
 
-        echo 'class Chart { constructor(id, config) { globalThis[id] = config; } }'; 
-        echo 'let document = {getElementById: (id) => id};'; 
+        echo 'class Chart { constructor(id, config) { globalThis[id] = config; } }';
+        echo 'let document = {getElementById: (id) => id};';
 
         cat data.html
-        | ./htmlq -- '[data-name="column_content"]' 
-        | ./htmlq --remove-nodes 'div div' --text 
-        | tail -n +50; 
+        | ./htmlq -- '[data-name="column_content"]'
+        | ./htmlq --remove-nodes 'div div' --text
+        | tail -n +50;
 
         echo '
           console.log(
