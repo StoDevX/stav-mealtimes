@@ -27,8 +27,12 @@ jobs:
         timestamp=$(date -u)
         git commit -m "Latest data: ${timestamp}" || exit 0
         git push
+    - name: Prepare to parse
+      run:
+        curl -o- --location https://github.com/mgdm/htmlq/releases/download/v0.4.0/htmlq-x86_64-linux.tar.gz | gunzip | tar -x htmlq
+        chmod u+x htmlq
     - name: Parse latest data
-      shell: /bin/bash
+      shell: bash
       # The indentation in this script is, unfortunately, important. If you indent the code, YAML likes to add
       # newlines, and then you have to escape the newlines, and ... yeah.
       run: >
@@ -38,8 +42,8 @@ jobs:
         echo 'let document = {getElementById: (id) => id};'; 
 
         cat data.html
-        | htmlq -- '[data-name="column_content"]' 
-        | htmlq --remove-nodes 'div div' --text 
+        | ./htmlq -- '[data-name="column_content"]' 
+        | ./htmlq --remove-nodes 'div div' --text 
         | tail -n +50; 
 
         echo '
@@ -53,6 +57,9 @@ jobs:
         ';
 
         ) | node | jq > data.json
+    - name: Clean up after parsing
+      run:
+        rm htmlq
     - name: Commit and push if it changed
       run: |-
         git config user.name "Automated"
