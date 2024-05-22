@@ -45,7 +45,65 @@ jobs:
           eval(await fs.readFile('./pipeline/2-extracted.html', 'utf-8'))
 
           let datasets = Object.entries(globalThis).filter(([key]) => key.startsWith("myChart")).map(([k, v]) => v);
-          console.log(JSON.stringify(datasets));
+          await fs.writeFile(path.join('pipeline', '3-converted.json'), JSON.stringify(datasets, null, '\t'));
+
+        EOF
+    - name: Massage the data into a consistent format
+      shell: bash
+      run: >
+        node --experimental-default-type=module <<EOF
+
+          import fs from 'node:fs/promises';
+          import path from 'node:path';
+          import assert from 'node:assert/strict';
+
+          import dayjs from 'https://esm.sh/dayjs@1.11.11';
+          import customParseFormat from 'https://esm.sh/dayjs@1.11.11/plugin/customParseFormat';
+
+          dayjs.extend(customParseFormat);
+          const now = dayjs();
+
+          const zip = (a, b) => Array(Math.min(b.length, a.length)).fill().map((_,i) => [a[i], b[i]]);
+
+          const data = JSON.parse(await fs.readFile('./pipeline/3-converted.json'));
+          assert(Array.isArray(data));
+
+          let output = data.map(dataset => {
+            let {labels, datasets} = dataset.data;
+            assert(datasets.length === 1);
+
+            let {label: rawDate, data} = datasets[0];
+
+            // "label" (aka the date) looks like "Monday, May 20"; we have to strip off the day-of-week part for DayJS to parse successfully
+            let parsedDate = dayjs(rawDate.split(',')[1], ['MMMM D', 'MMMM DD']);
+
+            if (parsedDate.isAfter(now)) {
+              // at the end of the year, we don't want to start writing to Y+1's December folder by accident
+              parsedDate = parsedDate.subtract(1, 'year');
+            }
+
+            // "labels,", the array of chart labels, re-uses '07:00:00' for both 7am and 7pm. Let's fix that by checking if we've seen `12:00:00` yet...
+            let lastHour = 0;
+            for (let i = 0; i < labels.length; i++) {
+              let label = labels[i];
+              let parsedLabel = dayjs(label, 'hh:mm:ss');
+
+              // give this date the full date
+              parsedLabel = parsedLabel.year(parsedDate.year()).month(parsedDate.month()).date(parsedDate.date());
+
+              let wentBackwards = lastHour > parsedLabel.hour();
+              if (wentBackwards) {
+                parsedLabel = parsedLabel.subtract(12, 'hour');
+              }
+              labels[i] = parsedLabel.format('HH:mm:ss');
+
+              lastHour = parsedLabel.hour();
+            }
+
+            let formattedData = {date: parsedDate.format('YYYY-MM-DD'), times: Object.fromEntries(zip(labels, data))};
+          })
+
+          await fs.writeFile(path.join('pipeline', '4-massaged.json'), JSON.stringify(output, null, '\t'));
 
         EOF
     - name: Parse data into one-file-per-day format
@@ -68,47 +126,14 @@ jobs:
 
           const zip = (a, b) => Array(Math.min(b.length, a.length)).fill().map((_,i) => [a[i], b[i]]);
 
-          const data = JSON.parse(await fs.readFile('./data.json'));
+          const data = JSON.parse(await fs.readFile('./pipeline/4-massaged.json'));
           assert(Array.isArray(data));
 
-          for (const dataset of data) {
-            let {labels, datasets} = dataset.data;
-            assert(datasets.length === 1);
-
-            let {label: rawDate, data} = datasets[0];
-
-            // "label" (aka the date) looks like "Monday, May 20"; we have to strip off the day-of-week part for DayJS to parse successfully
-            let parsedDate = dayjs(rawDate.split(',')[1], ['MMMM D', 'MMMM DD']);
-
-            if (parsedDate.isAfter(now)) {
-              // at the end of the year, we don't want to start writing to Y+1's December folder by accident
-              parsedDate = parsedDate.subtract(1, 'year');
-            }
+          for (const {date, times} of data) {
+            let parsedDate = dayjs(date)
 
             let folderName = path.join('data', parsedDate.format('YYYY'), parsedDate.format('MM'));
             await fs.mkdir(folderName, { recursive: true });
-
-            // "labels,", the array of chat labels, re-uses '07:00:00' for both 7am and 7pm. Let's fix that by checking if we've seen `12:00:00` yet...
-            let lastHour = 0;
-            for (let i = 0; i < labels.length; i++) {
-              let label = labels[i];
-              let parsedLabel = dayjs(label, 'hh:mm:ss');
-
-              // give this date the full date
-              parsedLabel = parsedLabel.year(parsedDate.year()).month(parsedDate.month()).date(parsedDate.date());
-
-              let wentBackwards = lastHour > parsedLabel.hour();
-              if (wentBackwards) {
-                parsedLabel = parsedLabel.subtract(12, 'hour');
-              }
-              labels[i] = parsedLabel.format('HH:mm:ss');
-
-              lastHour = parsedLabel.hour();
-            }
-
-            let formattedData = {date: parsedDate.format('YYYY-MM-DD'), times: Object.fromEntries(zip(labels, data))};
-            console.log(formattedData);
-
             await fs.writeFile(path.join(folderName, parsedDate.format('YYYY-MM-DD') + '.json'), JSON.stringify(formattedData, null, '\t'));
           }
 
