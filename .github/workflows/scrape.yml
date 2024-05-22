@@ -16,38 +16,39 @@ jobs:
       uses: actions/checkout@v4
       with:
         ref: ${{ github.head_ref }}
-    - name: Fetch latest data
-      run: |-
-        curl --fail 'https://www.stolaf.edu/apps/mealtimes/index.cfm' > data.html
     - name: Prepare to parse
       run: |
         curl -o- --location https://github.com/mgdm/htmlq/releases/download/v0.4.0/htmlq-x86_64-linux.tar.gz | gunzip | tar -x htmlq
         chmod u+x htmlq
-    - name: Parse latest data
+    - name: Fetch latest data
+      run: |-
+        curl --fail 'https://www.stolaf.edu/apps/mealtimes/index.cfm' > pipeline/1-raw.html
+    - name: Extract data from HTML document
       shell: bash
       run: >
-        cat data.html \
+        cat ./pipeline/1-raw.html \
           | ./htmlq -- '[data-name="column_content"]' \
           | ./htmlq --remove-nodes 'div div' --text \
-          | tail -n +50 > data-extracted.html;
-
-        node --experimental-default-type=module <<EOF | jq > data.json
+          | tail -n +50 > ./pipeline/2-extracted.html;
+    - name: Clean up after parsing
+      run: rm htmlq
+    - name: Extract data from HTML document
+      shell: bash
+      run: >
+        node --experimental-default-type=module <<EOF | jq > ./pipeline/3-converted.json
 
           const {default: fs} = await import('node:fs/promises');
 
           class Chart { constructor(id, config) { globalThis[id] = config; } }
           let document = {getElementById: (id) => id};
 
-          eval(await fs.readFile('./data-extracted.html', 'utf-8'))
+          eval(await fs.readFile('./pipeline/2-extracted.html', 'utf-8'))
 
           let datasets = Object.entries(globalThis).filter(([key]) => key.startsWith("myChart")).map(([k, v]) => v);
           console.log(JSON.stringify(datasets));
 
         EOF
-    - name: Clean up after parsing
-      run:
-        rm htmlq
-    - name: Parse data into one file per day
+    - name: Parse data into one-file-per-day format
       shell: bash
       # The indentation in this script is, unfortunately, important. If you indent the code, YAML likes to add
       # newlines, and then you have to escape the newlines, and ... yeah.
@@ -84,7 +85,7 @@ jobs:
               parsedDate = parsedDate.subtract(1, 'year');
             }
 
-            let folderName = parsedDate.format('YYYY');
+            let folderName = path.join('data', parsedDate.format('YYYY'), parsedDate.format('MM'));
             await fs.mkdir(folderName, { recursive: true });
 
             // "labels,", the array of chat labels, re-uses '07:00:00' for both 7am and 7pm. Let's fix that by checking if we've seen `12:00:00` yet...
@@ -108,7 +109,7 @@ jobs:
             let formattedData = {date: parsedDate.format('YYYY-MM-DD'), times: Object.fromEntries(zip(labels, data))};
             console.log(formattedData);
 
-            await fs.writeFile(path.join('.', folderName, parsedDate.format('YYYY-MM-DD') + '.json'), JSON.stringify(formattedData, null, '\t'));
+            await fs.writeFile(path.join(folderName, parsedDate.format('YYYY-MM-DD') + '.json'), JSON.stringify(formattedData, null, '\t'));
           }
 
         EOF
