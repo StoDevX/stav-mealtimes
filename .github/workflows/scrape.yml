@@ -101,7 +101,7 @@ jobs:
               lastHour = parsedLabel.hour();
             }
 
-            let formattedData = {date: parsedDate.format('YYYY-MM-DD'), times: Object.fromEntries(zip(labels, data))};
+            return {date: parsedDate.format('YYYY-MM-DD'), times: Object.fromEntries(zip(labels, data))};
           })
 
           await fs.writeFile(path.join('pipeline', '4-massaged.json'), JSON.stringify(output, null, '\t'));
