@@ -27,8 +27,8 @@ jobs:
       shell: bash
       run: >
         cat data.html \
-          | htmlq -- '[data-name="column_content"]' \
-          | htmlq --remove-nodes 'div div' --text \
+          | ./htmlq -- '[data-name="column_content"]' \
+          | ./htmlq --remove-nodes 'div div' --text \
           | tail -n +50 > data-extracted.html;
 
         node --experimental-default-type=module <<EOF | jq > data.json
