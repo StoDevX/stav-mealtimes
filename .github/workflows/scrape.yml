@@ -27,3 +27,37 @@ jobs:
         timestamp=$(date -u)
         git commit -m "Latest data: ${timestamp}" || exit 0
         git push
+    - name: Parse latest data
+      shell: /bin/bash
+      # The indentation in this script is, unfortunately, important. If you indent the code, YAML likes to add
+      # newlines, and then you have to escape the newlines, and ... yeah.
+      run: >
+        (
+
+        echo 'class Chart { constructor(id, config) { globalThis[id] = config; } }'; 
+        echo 'let document = {getElementById: (id) => id};'; 
+
+        cat data.html
+        | htmlq -- '[data-name="column_content"]' 
+        | htmlq --remove-nodes 'div div' --text 
+        | tail -n +50; 
+
+        echo '
+          console.log(
+            JSON.stringify(
+              Object.keys(globalThis)
+                .filter(key => key.startsWith("myChart"))
+                .map(key => globalThis[key])
+            )
+          );
+        ';
+
+        ) | node | jq > data.json
+    - name: Commit and push if it changed
+      run: |-
+        git config user.name "Automated"
+        git config user.email "actions@users.noreply.github.com"
+        git add -A
+        timestamp=$(date -u)
+        git commit -m "Latest data: ${timestamp}" || exit 0
+        git push
