@@ -35,12 +35,12 @@ jobs:
         uses: actions/configure-pages@v5
       - name: Generate two-weeks artifact
         run: >
-          jq -s . $(ls 20*/*.json | sort -n | tail -n 14) > two-weeks.json
+          jq -s . $(ls 20*/*/*.json | sort -n | tail -n 14) > data/two-weeks.json
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           # Upload entire repository
-          path: '.'
+          path: './data/'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
