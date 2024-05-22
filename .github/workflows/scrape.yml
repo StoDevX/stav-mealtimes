@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check out this repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Fetch latest data
       run: |-
         curl --fail 'https://www.stolaf.edu/apps/mealtimes/index.cfm' > data.html
