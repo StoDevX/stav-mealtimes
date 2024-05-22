@@ -19,14 +19,6 @@ jobs:
     - name: Fetch latest data
       run: |-
         curl --fail 'https://www.stolaf.edu/apps/mealtimes/index.cfm' > data.html
-    - name: Commit and push if it changed
-      run: |-
-        git config user.name "Automated"
-        git config user.email "actions@users.noreply.github.com"
-        git add -A
-        timestamp=$(date -u)
-        git commit -m "Latest data: ${timestamp}" || exit 0
-        git push
     - name: Prepare to parse
       run: |
         curl -o- --location https://github.com/mgdm/htmlq/releases/download/v0.4.0/htmlq-x86_64-linux.tar.gz | gunzip | tar -x htmlq
