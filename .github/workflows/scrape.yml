@@ -189,7 +189,7 @@ jobs:
       uses: actions/configure-pages@v5
     - name: Generate two-weeks artifact
       run: >
-        jq -s . $(ls data/summary/**/*.json | sort -n | tail -n 14) > data/two-weeks.json
+        jq -s . $(ls data/summary/*/*/*.json | sort -n | tail -n 14) > data/two-weeks.json
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
