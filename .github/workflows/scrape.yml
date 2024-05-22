@@ -88,7 +88,7 @@ jobs:
             await fs.mkdir(folderName, { recursive: true });
 
             // "labels,", the array of chat labels, re-uses '07:00:00' for both 7am and 7pm. Let's fix that by checking if we've seen `12:00:00` yet...
-            let haveSeenNoon = false;
+            let lastHour = 0;
             for (let i = 0; i < labels.length; i++) {
               let label = labels[i];
               let parsedLabel = dayjs(label, 'hh:mm:ss');
@@ -96,11 +96,13 @@ jobs:
               // give this date the full date
               parsedLabel = parsedLabel.year(parsedDate.year()).month(parsedDate.month()).date(parsedDate.date());
 
-              haveSeenNoon = haveSeenNoon || parsedLabel.hour() === 12;
-              if (haveSeenNoon && parsedLabel.hour() !== 12) {
+              let wentBackwards = lastHour < parsedLabel.hour();
+              if (wentBackwards) {
                 parsedLabel = parsedLabel.subtract(12, 'hour');
               }
               labels[i] = parsedLabel.format('HH:mm:ss');
+
+              lastHour = parsedLabel.hour();
             }
 
             let formattedData = {date: parsedDate.format('YYYY-MM-DD'), times: Object.fromEntries(zip(labels, data))};
