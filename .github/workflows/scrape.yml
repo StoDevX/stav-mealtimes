@@ -25,27 +25,92 @@ jobs:
         chmod u+x htmlq
     - name: Parse latest data
       shell: bash
-      # The indentation in this script is, unfortunately, important. If you indent the code, YAML likes to add
-      # newlines, and then you have to escape the newlines, and ... yeah.
       run: >
-        (
+        cat data.html \
+          | htmlq -- '[data-name="column_content"]' \
+          | htmlq --remove-nodes 'div div' --text \
+          | tail -n +50 > data-extracted.html;
 
-        echo 'class Chart { constructor(id, config) { globalThis[id] = config; } }';
-        echo 'let document = {getElementById: (id) => id};';
+        node --experimental-default-type=module <<EOF | jq > data.json
 
-        cat data.html
-        | htmlq -- '[data-name="column_content"]'
-        | htmlq --remove-nodes 'div div' --text
-        | tail -n +50;
+          const {default: fs} = await import('node:fs/promises');
 
-        echo 'let datasets = Object.entries(globalThis).filter(([key]) => key.startsWith("myChart")).map(([k, v]) => v);';
-        echo 'console.log(JSON.stringify(datasets));';
+          class Chart { constructor(id, config) { globalThis[id] = config; } }
+          let document = {getElementById: (id) => id};
 
-        ) | node | jq > data.json
+          eval(await fs.readFile('./data-extracted.html', 'utf-8'))
+
+          let datasets = Object.entries(globalThis).filter(([key]) => key.startsWith("myChart")).map(([k, v]) => v);
+          console.log(JSON.stringify(datasets));
+
+        EOF
     - name: Clean up after parsing
       run:
         rm htmlq
-    - name: Commit and push if it changed
+    - name: Parse data into one file per day
+      shell: bash
+      # The indentation in this script is, unfortunately, important. If you indent the code, YAML likes to add
+      # newlines, and then you have to escape the newlines, and ... yeah.
+      run: >
+        node --experimental-default-type=module --experimental-network-imports <<EOF
+
+          import fs from 'node:fs/promises';
+          import path from 'node:path';
+          import assert from 'node:assert/strict';
+
+          import dayjs from 'https://esm.sh/dayjs@1.11.11';
+          import customParseFormat from 'https://esm.sh/dayjs@1.11.11/plugin/customParseFormat';
+
+          dayjs.extend(customParseFormat);
+
+          const now = dayjs();
+
+          const zip = (a, b) => Array(Math.min(b.length, a.length)).fill().map((_,i) => [a[i], b[i]]);
+
+          const data = JSON.parse(await fs.readFile('./data.json'));
+          assert(Array.isArray(data));
+
+          for (const dataset of data) {
+            let {labels, datasets} = dataset.data;
+            assert(datasets.length === 1);
+
+            let {label: rawDate, data} = datasets[0];
+
+            // "label" (aka the date) looks like "Monday, May 20"; we have to strip off the day-of-week part for DayJS to parse successfully
+            let parsedDate = dayjs(rawDate.split(',')[1], ['MMMM D', 'MMMM DD']);
+
+            if (parsedDate.isAfter(now)) {
+              // at the end of the year, we don't want to start writing to Y+1's December folder by accident
+              parsedDate = parsedDate.subtract(1, 'year');
+            }
+
+            let folderName = parsedDate.format('YYYY');
+            await fs.mkdir(folderName, { recursive: true });
+
+            // "labels,", the array of chat labels, re-uses '07:00:00' for both 7am and 7pm. Let's fix that by checking if we've seen `12:00:00` yet...
+            let haveSeenNoon = false;
+            for (let i = 0; i < labels.length; i++) {
+              let label = labels[i];
+              let parsedLabel = dayjs(label, 'hh:mm:ss');
+
+              // give this date the full date
+              parsedLabel = parsedLabel.year(parsedDate.year()).month(parsedDate.month()).date(parsedDate.date());
+
+              haveSeenNoon = haveSeenNoon || parsedLabel.hour() === 12;
+              if (haveSeenNoon && parsedLabel.hour() !== 12) {
+                parsedLabel = parsedLabel.subtract(12, 'hour');
+              }
+              labels[i] = parsedLabel.format('HH:mm:ss');
+            }
+
+            let formattedData = {date: parsedDate.format('YYYY-MM-DD'), times: Object.fromEntries(zip(labels, data))};
+            console.log(formattedData);
+
+            await fs.writeFile(path.join('.', folderName, parsedDate.format('YYYY-MM-DD') + '.json'), JSON.stringify(formattedData, null, '\t'));
+          }
+
+        EOF
+    - name: Commit and push if anything changed
       run: |-
         git config user.name "Automated"
         git config user.email "actions@users.noreply.github.com"
