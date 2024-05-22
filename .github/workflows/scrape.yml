@@ -28,7 +28,7 @@ jobs:
         git commit -m "Latest data: ${timestamp}" || exit 0
         git push
     - name: Prepare to parse
-      run:
+      run: |
         curl -o- --location https://github.com/mgdm/htmlq/releases/download/v0.4.0/htmlq-x86_64-linux.tar.gz | gunzip | tar -x htmlq
         chmod u+x htmlq
     - name: Parse latest data
