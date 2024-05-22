@@ -165,13 +165,11 @@ jobs:
             let {date, times: inputTimes} = JSON.parse(await fs.readFile(file))
             let parsedDate = dayjs(date)
 
-            let times = Object.create(null)
-
-            for (let hour = 0; hour < 24; hour++) {
+            let times = Object.fromEntries(Array(24).fill().map((_, hour) => {
               let stringHour = String(hour).padStart(2, '0')
               let hourTotal = Object.entries(inputTimes).filter(([key]) => key.startsWith(`${stringHour}:`)).map(([_key, value]) => value).reduce((a, b) => a + b, 0)
-              times[stringHour] = hourTotal;
-            }
+              return [`${stringHour}:00`, hourTotal];
+            }))
 
             let folderName = path.join('data', 'summary', parsedDate.format('YYYY'), parsedDate.format('MM'));
             await fs.mkdir(folderName, { recursive: true });
