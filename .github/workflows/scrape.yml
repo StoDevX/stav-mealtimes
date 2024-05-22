@@ -52,7 +52,7 @@ jobs:
     - name: Massage the data into a consistent format
       shell: bash
       run: >
-        node --experimental-default-type=module <<EOF
+        node --experimental-default-type=module --experimental-network-imports <<EOF
 
           import fs from 'node:fs/promises';
           import path from 'node:path';
