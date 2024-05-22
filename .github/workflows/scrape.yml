@@ -35,9 +35,10 @@ jobs:
     - name: Extract data from HTML document
       shell: bash
       run: >
-        node --experimental-default-type=module <<EOF | jq > ./pipeline/3-converted.json
+        node --experimental-default-type=module <<EOF
 
-          const {default: fs} = await import('node:fs/promises');
+          import fs from 'node:fs/promises';
+          import path from 'node:path';
 
           class Chart { constructor(id, config) { globalThis[id] = config; } }
           let document = {getElementById: (id) => id};
