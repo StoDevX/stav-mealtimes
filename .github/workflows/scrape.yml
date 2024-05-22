@@ -138,7 +138,41 @@ jobs:
           for (const {date, times} of data) {
             let parsedDate = dayjs(date)
 
-            let folderName = path.join('data', parsedDate.format('YYYY'), parsedDate.format('MM'));
+            let folderName = path.join('data', 'raw', parsedDate.format('YYYY'), parsedDate.format('MM'));
+            await fs.mkdir(folderName, { recursive: true });
+            await fs.writeFile(path.join(folderName, parsedDate.format('YYYY-MM-DD') + '.json'), JSON.stringify({date, times}, null, '\t'));
+          }
+
+        EOF
+    - name: Summarize parsed data into hourly information
+      shell: bash
+      run: >
+        node --experimental-default-type=module --experimental-network-imports <<EOF
+
+          import fs from 'node:fs/promises';
+          import path from 'node:path';
+          import assert from 'node:assert/strict';
+
+          import dayjs from 'https://esm.sh/dayjs@1.11.11';
+          import customParseFormat from 'https://esm.sh/dayjs@1.11.11/plugin/customParseFormat';
+
+          dayjs.extend(customParseFormat);
+
+          for await (const file of fs.glob('data/raw/**/*.json')) {
+            let {date, times: inputTimes} = JSON.parse(await fs.readFile(file))
+            let parsedDate = dayjs(date)
+
+            let outputTimes = new Map()
+
+            for (const hour = 0; hour < 24; hour++) {
+              let stringHour = String(hour).padStart(2, '0')
+              let hourTotal = Object.entries(inputTimes).filter(([key]) => key.startsWith(`${stringHour}:`)).map(([_key, value]) => value).reduce((a, b) => a + b, 0)
+              outputTimes.set(stringHour, hourTotal);
+            }
+
+            let times = Object.fromEntries(outputTimes)
+
+            let folderName = path.join('data', 'summary', parsedDate.format('YYYY'), parsedDate.format('MM'));
             await fs.mkdir(folderName, { recursive: true });
             await fs.writeFile(path.join(folderName, parsedDate.format('YYYY-MM-DD') + '.json'), JSON.stringify({date, times}, null, '\t'));
           }
