@@ -124,8 +124,6 @@ jobs:
         EOF
     - name: Parse data into one-file-per-day format
       shell: bash
-      # The indentation in this script is, unfortunately, important. If you indent the code, YAML likes to add
-      # newlines, and then you have to escape the newlines, and ... yeah.
       run: >
         node --experimental-default-type=module --experimental-network-imports <<EOF
 
@@ -134,16 +132,8 @@ jobs:
           import assert from 'node:assert/strict';
 
           import dayjs from 'https://esm.sh/dayjs@1.11.11';
-          import customParseFormat from 'https://esm.sh/dayjs@1.11.11/plugin/customParseFormat';
-
-          dayjs.extend(customParseFormat);
-
-          const now = dayjs();
-
-          const zip = (a, b) => Array(Math.min(b.length, a.length)).fill().map((_,i) => [a[i], b[i]]);
 
           const data = JSON.parse(await fs.readFile('./pipeline/4-massaged.json'));
-          assert(Array.isArray(data));
 
           for (const {date, times} of data) {
             let parsedDate = dayjs(date)
