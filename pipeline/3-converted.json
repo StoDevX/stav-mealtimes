@@ -7,23 +7,6 @@
 			],
 			"datasets": [
 				{
-					"label": "Sunday, May 26",
-					"backgroundColor": "rgb(255, 99, 132)",
-					"borderColor": "rgb(255, 99, 132)",
-					"data": []
-				}
-			]
-		},
-		"options": {}
-	},
-	{
-		"type": "line",
-		"data": {
-			"labels": [
-				""
-			],
-			"datasets": [
-				{
 					"label": "Monday, May 27",
 					"backgroundColor": "rgb(255, 99, 132)",
 					"borderColor": "rgb(255, 99, 132)",
@@ -138,6 +121,37 @@
 			"datasets": [
 				{
 					"label": "Saturday, June 1",
+					"backgroundColor": "rgb(255, 99, 132)",
+					"borderColor": "rgb(255, 99, 132)",
+					"data": [
+						1,
+						1,
+						1,
+						1,
+						1,
+						1,
+						1
+					]
+				}
+			]
+		},
+		"options": {}
+	},
+	{
+		"type": "line",
+		"data": {
+			"labels": [
+				"07:45:00",
+				"08:00:00",
+				"11:00:00",
+				"11:30:00",
+				"11:45:00",
+				"12:15:00",
+				"12:45:00"
+			],
+			"datasets": [
+				{
+					"label": "Sunday, June 2",
 					"backgroundColor": "rgb(255, 99, 132)",
 					"borderColor": "rgb(255, 99, 132)",
 					"data": [
