@@ -3,27 +3,6 @@
 		"type": "line",
 		"data": {
 			"labels": [
-				"11:15:00",
-				"12:00:00"
-			],
-			"datasets": [
-				{
-					"label": "Thursday, May 30",
-					"backgroundColor": "rgb(255, 99, 132)",
-					"borderColor": "rgb(255, 99, 132)",
-					"data": [
-						2,
-						13
-					]
-				}
-			]
-		},
-		"options": {}
-	},
-	{
-		"type": "line",
-		"data": {
-			"labels": [
 				"11:30:00",
 				"11:45:00",
 				"12:15:00",
@@ -204,6 +183,37 @@
 						1,
 						1,
 						1
+					]
+				}
+			]
+		},
+		"options": {}
+	},
+	{
+		"type": "line",
+		"data": {
+			"labels": [
+				"10:30:00",
+				"11:00:00",
+				"11:45:00",
+				"12:00:00",
+				"12:15:00",
+				"12:30:00",
+				"12:45:00"
+			],
+			"datasets": [
+				{
+					"label": "Thursday, June 6",
+					"backgroundColor": "rgb(255, 99, 132)",
+					"borderColor": "rgb(255, 99, 132)",
+					"data": [
+						1,
+						2,
+						2,
+						7,
+						1,
+						1,
+						2
 					]
 				}
 			]
