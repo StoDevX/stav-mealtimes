@@ -31,7 +31,7 @@ jobs:
       with:
         node-version: '22'
     - name: Check out this repo
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         ref: ${{ github.head_ref }}
     - name: Prepare to parse
