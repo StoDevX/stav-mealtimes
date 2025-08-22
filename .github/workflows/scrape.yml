@@ -191,7 +191,7 @@ jobs:
       run: >
         jq -s . $(ls data/summary/*/*/*.json | sort -n | tail -n 14) > data/two-weeks.json
     - name: Upload artifact
-      uses: actions/upload-pages-artifact@v3
+      uses: actions/upload-pages-artifact@v4
       with:
         # Upload entire repository
         path: './data/'
