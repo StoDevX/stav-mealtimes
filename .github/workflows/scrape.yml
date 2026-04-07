@@ -186,7 +186,7 @@ jobs:
         git commit -m "Latest data: ${timestamp}" || exit 0
         git push
     - name: Setup Pages
-      uses: actions/configure-pages@v5
+      uses: actions/configure-pages@v6
     - name: Generate two-weeks artifact
       run: >
         jq -s . $(ls data/summary/*/*/*.json | sort -n | tail -n 14) > data/two-weeks.json
